@@ -1,79 +1,162 @@
-<script>
-let currentQuestion = 0;
-let answers = [];
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIコンサルタント特化型診断チャート</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+  <style>
+    .fade-in { animation: fadeIn 0.5s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px);} to { opacity:1; transform: translateY(0);} }
+    .question-card { min-height: 300px; }
+    .result-card { min-height: 400px; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen font-sans">
+  <div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-gray-800 mb-2">
+        <i class="fas fa-robot text-blue-600 mr-3"></i>AIコンサルタント特化型診断
+      </h1>
+      <p class="text-xl text-gray-600">あなたに最適なコンサルティングスタイルを見つけよう</p>
+    </div>
+    <!-- Start Screen -->
+    <div id="start-screen" class="text-center fade-in">
+      <div class="bg-white rounded-2xl shadow-xl p-8 max-w-2xl mx-auto">
+        <div class="mb-6">
+          <i class="fas fa-compass text-6xl text-blue-600 mb-4"></i>
+          <h2 class="text-2xl font-bold text-gray-800 mb-4">診断を開始しましょう</h2>
+          <p class="text-gray-600 leading-relaxed">
+            この診断では、あなたの興味や得意分野に基づいて、<br>
+            4つのAIコンサルタント特化型のうち最適なものを見つけます。<br>
+            <strong>セミナー型</strong>、<strong>サポート型</strong>、<strong>集客マーケ型</strong>、<strong>マネジメント型</strong>
+          </p>
+        </div>
+        <button onclick="startDiagnosis()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-full transition-all duration-300 transform hover:scale-105">
+          <i class="fas fa-play mr-2"></i>診断開始
+        </button>
+      </div>
+    </div>
+    <!-- Question Screen -->
+    <div id="question-screen" class="hidden fade-in">
+      <div class="bg-white rounded-2xl shadow-xl p-8 max-w-3xl mx-auto question-card">
+        <div class="flex justify-between items-center mb-6">
+          <div class="text-sm text-gray-500">質問 <span id="question-number">1</span> / <span id="total-questions">5</span></div>
+          <div class="w-64 bg-gray-200 rounded-full h-2">
+            <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width:20%"></div>
+          </div>
+        </div>
+        <div id="question-content" class="text-center"></div>
+      </div>
+    </div>
+    <!-- Result Screen -->
+    <div id="result-screen" class="hidden fade-in">
+      <div class="bg-white rounded-2xl shadow-xl p-8 max-w-4xl mx-auto result-card">
+        <div id="result-content"></div>
+        <div class="text-center mt-8">
+          <button onclick="restartDiagnosis()" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-full transition-all duration-300">
+            <i class="fas fa-redo mr-2"></i>もう一度診断する
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-const questions = [
-  {
-    question: "人と接する場面で、どちらの方が得意ですか？",
-    options: [
-      { text: "大勢の前で発表・教育する", value: "group", icon: "fas fa-users" },
-      { text: "個別対応・寄り添い支援", value: "individual", icon: "fas fa-user-friends" },
-      { text: "どちらも大丈夫・場面で使い分ける", value: "both_q1", icon: "fas fa-school" }
-    ]
-  },
-  {
-    question: "仕事で重視するのはどちらですか？",
-    options: [
-      { text: "数字・データ・成果創出", value: "data", icon: "fas fa-chart-line" },
-      { text: "戦略・企画・組織運営", value: "strategy", icon: "fas fa-chess-king" },
-      { text: "どちらも大丈夫・場面で使い分ける", value: "both_q2", icon: "fas fa-school" }
-    ]
-  },
-  {
-    question: "最もモチベーションが上がるのはどれですか？",
-    options: [
-      { text: "多くの人に知識を伝えること", value: "teaching", icon: "fas fa-chalkboard-teacher" },
-      { text: "現場の課題を解決すること", value: "problem-solving", icon: "fas fa-tools" },
-      { text: "売上や集客の数字を伸ばすこと", value: "growth", icon: "fas fa-rocket" },
-      { text: "組織やプロジェクトを率いること", value: "leadership", icon: "fas fa-crown" }
-    ]
-  },
-  {
-    question: "得意だと感じる活動はどれですか？",
-    options: [
-      { text: "ワークショップやディスカッションの進行", value: "facilitation", icon: "fas fa-comments" },
-      { text: "業務の自動化や効率化", value: "automation", icon: "fas fa-cogs" },
-      { text: "SNSやコンテンツ制作", value: "content", icon: "fas fa-camera" },
-      { text: "企画立案や分析", value: "planning", icon: "fas fa-lightbulb" }
-    ]
-  },
-  {
-    question: "理想的な成果はどれですか？",
-    options: [
-      { text: "多くの人のスキルアップに貢献", value: "education-impact", icon: "fas fa-graduation-cap" },
-      { text: "現場から感謝される", value: "appreciation", icon: "fas fa-heart" },
-      { text: "数値で見える成長を実現", value: "measurable-growth", icon: "fas fa-trophy" },
-      { text: "会社の未来を変える", value: "transformation", icon: "fas fa-star" }
-    ]
-  }
-];
+  <script>
+    let currentQuestion = 0;
+    let answers = [];
 
-function calculateResult() {
-  const scores = { seminar: 0, support: 0, marketing: 0, management: 0 };
-  answers.forEach(answer => {
-    switch(answer) {
-      case 'group': scores.seminar += 2; break;
-      case 'individual': scores.support += 2; break;
-      case 'both_q1': scores.seminar += 1; scores.support += 1; break;
-      case 'data': scores.marketing += 2; break;
-      case 'strategy': scores.management += 2; break;
-      case 'both_q2': scores.marketing += 1; scores.management += 1; break;
-      case 'teaching': scores.seminar += 3; break;
-      case 'problem-solving': scores.support += 3; break;
-      case 'growth': scores.marketing += 3; break;
-      case 'leadership': scores.management += 3; break;
-      case 'facilitation': scores.seminar += 2; break;
-      case 'automation': scores.support += 2; break;
-      case 'content': scores.marketing += 2; break;
-      case 'planning': scores.management += 2; break;
-      case 'education-impact': scores.seminar += 3; break;
-      case 'appreciation': scores.support += 3; break;
-      case 'measurable-growth': scores.marketing += 3; break;
-      case 'transformation': scores.management += 3; break;
+    const questions = [
+      { question: "人と接する場面で、どちらの方が得意ですか？", options: [
+          { text: "大勢の前で発表・教育する", value: "group", icon: "fas fa-users" },
+          { text: "個別対応・寄り添い支援", value: "individual", icon: "fas fa-user-friends" },
+          { text: "どちらも大丈夫・場面で使い分ける", value: "both_q1", icon: "fas fa-school" }
+        ]
+      },
+      { question: "仕事で重視するのはどちらですか？", options: [
+          { text: "数字・データ・成果創出", value: "data", icon: "fas fa-chart-line" },
+          { text: "戦略・企画・組織運営", value: "strategy", icon: "fas fa-chess-king" },
+          { text: "どちらも大丈夫・場面で使い分ける", value: "both_q2", icon: "fas fa-school" }
+        ]
+      },
+      { question: "最もモチベーションが上がるのはどれですか？", options: [
+          { text: "多くの人に知識を伝えること", value: "teaching", icon: "fas fa-chalkboard-teacher" },
+          { text: "現場の課題を解決すること", value: "problem-solving", icon: "fas fa-tools" },
+          { text: "売上や集客の数字を伸ばすこと", value: "growth", icon: "fas fa-rocket" },
+          { text: "組織やプロジェクトを率いること", value: "leadership", icon: "fas fa-crown" }
+        ]
+      },
+      { question: "得意だと感じる活動はどれですか？", options: [
+          { text: "ワークショップやディスカッションの進行", value: "facilitation", icon: "fas fa-comments" },
+          { text: "業務の自動化や効率化", value: "automation", icon: "fas fa-cogs" },
+          { text: "SNSやコンテンツ制作", value: "content", icon: "fas fa-camera" },
+          { text: "企画立案や分析", value: "planning", icon: "fas fa-lightbulb" }
+        ]
+      },
+      { question: "理想的な成果はどれですか？", options: [
+          { text: "多くの人のスキルアップに貢献", value: "education-impact", icon: "fas fa-graduation-cap" },
+          { text: "現場から感謝される", value: "appreciation", icon: "fas fa-heart" },
+          { text: "数値で見える成長を実現", value: "measurable-growth", icon: "fas fa-trophy" },
+          { text: "会社の未来を変える", value: "transformation", icon: "fas fa-star" }
+        ]
+      }
+    ];
+
+    const results = {
+      seminar: { title: "セミナー型コンサルタント", icon: "fas fa-chalkboard-teacher", color: "bg-green-500", description: "教育とプレゼンテーションのエキスパート", characteristics: ["大勢の前で発表することが得意","教育に興味","知識の共有が好き","ワークショップ運営が得意"], recommendations: ["企業向けセミナー","オンライン教育コンテンツ","業界講演","社内教育プログラム"] },
+      support: { title: "サポート型コンサルタント", icon: "fas fa-hands-helping", color: "bg-blue-500", description: "現場に寄り添うパートナー", characteristics: ["課題抽出が得意","自動化に強い","カスタマイズ","感謝がモチベ"], recommendations: ["効率化支援","ツール導入","メンテナンス","現場密着"] },
+      marketing: { title: "集客マーケ型コンサルタント", icon: "fas fa-rocket", color: "bg-purple-500", description: "数字で成果を作るマーケター", characteristics: ["SNS好き","データ分析好き","コンテンツ得意","PDCA得意"], recommendations: ["マー戦術立案","コンテンツ支援","集客最適化","広告運用"] },
+      management: { title: "マネジメント型コンサルタント", icon: "fas fa-chess-king", color: "bg-red-500", description: "組織変革をリード", characteristics: ["未来志向","組織運営","企画好き","リーダーシップ"], recommendations: ["導入戦略立案","DXプロジェクト","経営層支援","大規模管理"] }
+    };
+
+    function startDiagnosis() {
+      document.getElementById('start-screen').classList.add('hidden');
+      document.getElementById('question-screen').classList.remove('hidden');
+      currentQuestion = 0; answers = [];
+      showQuestion();
     }
-  });
-  const maxScore = Math.max(...Object.values(scores));
-  const resultType = Object.keys(scores).find(key => scores[key] === maxScore);
-  return { type: resultType, scores };
-}
-</script>
+
+    function showQuestion() {
+      const q = questions[currentQuestion];
+      document.getElementById('question-number').textContent = currentQuestion+1;
+      document.getElementById('total-questions').textContent = questions.length;
+      document.getElementById('progress-bar').style.width = ((currentQuestion+1)/questions.length*100)+'%';
+      let html = `<h3 class="text-2xl font-bold text-gray-800 mb-6">${q.question}</h3><div class="space-y-3">`;
+      q.options.forEach(o=>{
+        html += `<button onclick="selectAnswer('${o.value}')" class="bg-gray-50 hover:bg-blue-50 border-2 border-gray-200 hover:border-blue-400 rounded-xl p-4 w-full text-left transition-all duration-300 transform hover:scale-102"><div class="flex items-center"><i class="${o.icon} text-2xl text-blue-600 mr-4"></i><span class="text-lg font-medium text-gray-800">${o.text}</span></div></button>`;
+      });
+      html += '</div>';
+      document.getElementById('question-content').innerHTML = html;
+    }
+
+    function selectAnswer(val) {
+      answers.push(val);
+      if(currentQuestion<questions.length-1){ currentQuestion++; showQuestion(); }
+      else { showResult(); }
+    }
+
+    function showResult() {
+      const {type,scores} = calculateResult();
+      const r = results[type];
+      document.getElementById('question-screen').classList.add('hidden');
+      document.getElementById('result-screen').classList.remove('hidden');
+      let resHtml = `<div class="text-center mb-8"><div class="${r.color} text-white rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4"><i class="${r.icon} text-4xl"></i></div><h2 class="text-3xl font-bold text-gray-800 mb-2">${r.title}</h2><p class="text-xl text-gray-600">${r.description}</p></div><div class="grid md:grid-cols-2 gap-8 mb-8"><div class="bg-gray-50 rounded-xl p-6"><h3 class="text-xl font-bold text-gray-800 mb-4"><i class="fas fa-star text-yellow-500 mr-2"></i>あなたの特徴</h3><ul class="space-y-2">`;
+      r.characteristics.forEach(c=>{ resHtml+=`<li class="flex items-start"><i class="fas fa-check text-green-500 mr-2 mt-1"></i><span class="text-gray-700">${c}</span></li>`; });
+      resHtml+='</ul></div><div class="bg-gray-50 rounded-xl p-6"><h3 class="text-xl font-bold text-gray-800 mb-4"><i class="fas fa-lightbulb text-yellow-500 mr-2"></i>おすすめの活動</h3><ul class="space-y-2">`;
+      r.recommendations.forEach(rec=>{ resHtml+=`<li class="flex items-start"><i class="fas fa-arrow-right text-blue-500 mr-2 mt-1"></i><span class="text-gray-700">${rec}</span></li>`; });
+      resHtml+='</ul></div></div><div class="bg-blue-50 rounded-xl p-6"><h3 class="text-xl font-bold text-gray-800 mb-4"><i class="fas fa-chart-bar text-blue-500 mr-2"></i>診断結果の詳細スコア</h3><div class="grid grid-cols-2 md:grid-cols-4 gap-4">`;
+      Object.entries(scores).forEach(([k,v])=>{
+        const pd = Math.round(v/Math.max(...Object.values(scores))*100);
+        const td = results[k];
+        resHtml+=`<div class="text-center"><div class="${td.color} text-white rounded-lg p-3 mb-2"><i class="${td.icon} text-2xl"></i></div><div class="text-sm font-medium text-gray-700">${td.title.replace('コンサルタント','')}</div><div class="text-lg font-bold text-gray-800">${v}pt</div><div class="w-full bg-gray-200 rounded-full h-2 mt-1"><div class="${td.color}" style="width:${pd}%;height:8px;border-radius:9999px"></div></div></div>`;
+      });
+      resHtml+='</div></div>';
+      document.getElementById('result-content').innerHTML = resHtml;
+    }
+
+    function restartDiagnosis(){ document.getElementById('result-screen').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden'); }
+  </script>
+</body>
+</html>
